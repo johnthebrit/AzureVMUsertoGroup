@@ -2,7 +2,7 @@
 #$URIValue = "https://savtechosexecute.azurewebsites.net/api/VMGroupMemberModify?code==="
 
 #add someone
-$BodyObject = [PSCustomObject]@{"Action"="Add";"CompName"="savazuusscwin10";"SecPrincipal"="savilltech\bruce";"TargetLocalGroup"="administrators"}
+$BodyObject = [PSCustomObject]@{"Action"="Add";"CompName"="savazuusscwin10";"SecPrincipal"="savilltech\bruce";"Duration"="10m";"TargetLocalGroup"="administrators"}
 $BodyJSON = ConvertTo-Json($BodyObject)
 $response = Invoke-RestMethod -Uri $URIValue -Method POST -Body $BodyJSON -ContentType 'application/json'
 

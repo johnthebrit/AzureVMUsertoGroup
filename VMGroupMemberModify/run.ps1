@@ -8,7 +8,7 @@ param($Request, $TriggerMetadata)
 # Import-Module "D:\home\site\wwwroot\VMGroupMemberModify\Az.ResourceGraph\Az.ResourceGraph.psd1"
 
 # Write to the Azure Functions log stream.
-Write-Host "PowerShell HTTP trigger function processed a request."
+Write-Host "PowerShell VMGroupMemberModify function processed a request."
 
 #Set initial status
 $statusGood = $true
@@ -35,6 +35,8 @@ $compname = $Request.Query.CompName
 $duration = $Request.Query.Duration
 $secprincipal = $Request.Query.SecPrincipal
 $targetlocalgroup = $Request.Query.TargetLocalGroup
+
+$baseDate = Get-Date -Date "01/01/1970"
 
 if (-not $action) {
     $action = $Request.Body.Action
@@ -118,13 +120,18 @@ if($statusGood)
             | where type =~ 'Microsoft.Compute/virtualMachines'
             | where properties.osProfile.computerName =~ '$compname'
             | join (ResourceContainers | where type=='microsoft.resources/subscriptions' | project SubName=name, subscriptionId) on subscriptionId
-            | project VMName = name, CompName = properties.osProfile.computerName, RGName = resourceGroup, SubName, SubID = subscriptionId"
+            | project VMName = name, CompName = properties.osProfile.computerName, OSType = properties.storageProfile.osDisk.osType, RGName = resourceGroup, SubName, SubID = subscriptionId"
             $VMresource = Search-AzGraph -Query $GraphSearchQuery
 
             if($VMresource -eq $null)
             {
                 $statusGood = $false
                 $body = "Could not find a matching VM resource for computer name $compname"
+            }
+            elseif ($VMresource.OSType -ne "Windows")
+            {
+                $statusGood = $false
+                $body = "Associated VM for $compname is not Windows, $($VMresource.VMName) in RG $($VMresource.RGName) in sub $($VMresource.Subname). This function only supports Windows VMs"
             }
             else
             {
@@ -181,12 +188,13 @@ if($statusGood)
 
                 Remove-Item $env:temp\$TempFileName
 
-                if(($result.status -eq "Succeeded") -and ($action -ne "Audit")) #no table update if audit only
+                if(($result.status -eq "Succeeded") -and ($action -ne "Audit") -and ($duration -ne "0")) #no table update if audit only and not infinite duration
                 {
 
                     $tablePrincipalName = $secprincipal.Replace("\","") #\not legal character for the row or partition id
                     #Add or update the table
-                    $expiryTime = (Get-Date).AddMinutes($durationinMinutes)
+                    $expiryTime = (Get-Date).ToUniversalTime().AddMinutes($durationinMinutes)
+                    $expiryTimeSeconds = [math]::Round((New-TimeSpan -Start $baseDate -End $expiryTime).TotalSeconds)
 
                     try {
                         #Check if record exists for the user and guest OS
@@ -202,7 +210,7 @@ if($statusGood)
                                 Add-AzTableRow `
                                     -table $cloudTable `
                                     -partitionKey $tablePrincipalName `
-                                    -rowKey ($VMresource.VMName) -property @{"ExpiryTime"="$expiryTime";"Principal"="$secprincipal";"ResourceGroup"="$($VMresource.RGName)";"Subscription"="$($VMResource.SubID)";}
+                                    -rowKey ($VMresource.VMName) -property @{"ExpiryTime"="$expiryTime";"ExpiryTimeSeconds"="$expiryTimeSeconds";"Principal"="$secprincipal";"OSName"="$compname";"GroupName"="$targetlocalgroup";"ResourceGroup"="$($VMresource.RGName)";"Subscription"="$($VMResource.SubID)";}
                             }
                             else
                             {

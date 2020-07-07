@@ -6,7 +6,7 @@ param($Request, $TriggerMetadata)
 #Import Az.ResourceGraph (not required as loaded via requirements.psd1)
 
 # Write to the Azure Functions log stream.
-Write-Host "PowerShell HTTP trigger function processed a request."
+Write-Host "PowerShell VMList function processed a request."
 
 #Set initial status
 $statusGood = $true
