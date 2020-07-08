@@ -188,7 +188,7 @@ if($statusGood)
 
                 Remove-Item $env:temp\$TempFileName
 
-                if(($result.status -eq "Succeeded") -and ($action -ne "Audit") -and ($duration -ne "0")) #no table update if audit only and not infinite duration
+                if(($result.status -eq "Succeeded") -and ($action -ne "Audit")) #no table update if audit only and not infinite duration
                 {
 
                     $tablePrincipalName = $secprincipal.Replace("\","") #\not legal character for the row or partition id
@@ -204,7 +204,7 @@ if($statusGood)
 
                         if($action -eq "Add")
                         {
-                            if(!$record) #if does not exist
+                            if(!$record -and ($duration -ne "0")) #if does not exist and its not duration 0
                             {
                                 #Create
                                 Add-AzTableRow `
@@ -214,9 +214,16 @@ if($statusGood)
                             }
                             else
                             {
-                                #Need to update the expiry time. This assumes this new record should overwrite the existing even if potentially existing was a later time
-                                $record.ExpiryTime = "$expiryTime"
-                                $record | Update-AzTableRow -table $cloudTable #commit the change
+                                if($duration -ne "0")
+                                {
+                                    #Need to update the expiry time. This assumes this new record should overwrite the existing even if potentially existing was a later time
+                                    $record.ExpiryTime = "$expiryTime"
+                                    $record | Update-AzTableRow -table $cloudTable #commit the change
+                                }
+                                else #remove the record as we no longer have an expiry
+                                {
+                                    $record | Remove-AzTableRow -table $cloudTable
+                                }
                             }
                         }
                         else #assume Remove
