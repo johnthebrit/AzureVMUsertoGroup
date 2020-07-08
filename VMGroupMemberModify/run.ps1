@@ -123,7 +123,7 @@ if($statusGood)
             | project VMName = name, CompName = properties.osProfile.computerName, OSType = properties.storageProfile.osDisk.osType, RGName = resourceGroup, SubName, SubID = subscriptionId"
             $VMresource = Search-AzGraph -Query $GraphSearchQuery
 
-            if($VMresource -eq $null)
+            if($null -eq $VMresource)
             {
                 $statusGood = $false
                 $body = "Could not find a matching VM resource for computer name $compname"

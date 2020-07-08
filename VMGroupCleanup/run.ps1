@@ -11,7 +11,6 @@ Write-Host "PowerShell VMGroupCleanup function processed a request."
 
 #Set initial status
 $statusGood = $true
-$body = ""
 
 $baseDate = Get-Date -Date "01/01/1970"
 
