@@ -1,0 +1,30 @@
+{
+"name": "FUNC_STOR_ActName",
+"value": "sasavusscuserelevate",
+"slotSetting": false
+},
+{
+"name": "FUNC_STOR_LogTblName",
+"value": "userelevationlogs",
+"slotSetting": false
+},
+{
+"name": "FUNC_STOR_PlanName",
+"value": "savtechosexecute",
+"slotSetting": false
+},
+{
+"name": "FUNC_STOR_RGName",
+"value": "RG-USSC-OSExecuteFunction",
+"slotSetting": false
+},
+{
+"name": "FUNC_STOR_TblName",
+"value": "userelevationdata",
+"slotSetting": false
+},
+{
+  "name": "PSWorkerInProcConcurrencyUpperBound",
+  "value": "5",
+  "slotSetting": false
+}

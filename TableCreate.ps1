@@ -11,3 +11,5 @@ $storageContext = $storageAccount.Context
 
 $tableName = "userelevationdata"
 New-AzStorageTable –Name $tableName –Context $storageContext
+$tableName2 = "userelevationlogs"
+New-AzStorageTable –Name $tableName2 –Context $storageContext
