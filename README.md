@@ -1,4 +1,3 @@
-# AzureVMUsertoGroup
 # Azure VM Local Group Provisioning Solution #
 
 This solution is designed to enable users to be added to local groups of Azure VMs for a specified duration. Once the duration has expired the user assignment in the group will be automatically revoked. This is useful for temporary elevation to a local group membership, e.g. administrators.
