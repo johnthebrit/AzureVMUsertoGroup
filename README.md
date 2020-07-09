@@ -20,4 +20,4 @@ App keys are used to secure the calling of the VMList and VMGroupMemberModify fu
 * The managed identity of the App Plan MUST be a contributor on the App Plan (so it can fetch keys)
 * A function Key named __VMGroupCleanupKey__ must exist on the __VMGroupMemberModify__ function to be used by VMGroupCleanup.
 
-[CallRestAPI.ps1](VMGroupMemberModify\CallRestAPI.ps1) has examples of calling the function to add/remove/audit. Simply preconfigure the $URIValue variable with a key that has been created for the function. [testrun.ps1](AzureFindVMs\testrun.ps1) has an example to call the VM list.
+[CallRestAPI.ps1](VMGroupMemberModify/CallRestAPI.ps1) has examples of calling the function to add/remove/audit. Simply preconfigure the $URIValue variable with a key that has been created for the function. [testrun.ps1](AzureFindVMs/testrun.ps1) has an example to call the VM list.
