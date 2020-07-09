@@ -64,53 +64,51 @@ if($statusGood)
 
     Write-Host "** Starting cleanup execution with current time $currentTime ($currentTimeSeconds) **"
 
+    #Fetch expired only
     $records = Get-AzTableRow `
-        -table $cloudTable #`
-        #-CustomFilter "ExpiryTimeSeconds lt $currentTimeSeconds"
+        -table $cloudTable `
+        -ColumnName 'ExpiryTimeSeconds' -value $currentTimeSeconds -Operator LessThan
 
     foreach($record in $records)
     {
-        if($record.ExpiryTimeSeconds -lt $currentTimeSeconds)
+        Write-Host "Removing $($record.Principal) from $($record.GroupName) on machine $($record.OSName)"
+        $BodyObject = [PSCustomObject]@{"Action"="Remove";"CompName"=$record.RowKey;"SecPrincipal"=$record.Principal;"TargetLocalGroup"="$($record.GroupName)"}
+        $BodyJSON = ConvertTo-Json($BodyObject)
+        $response = Invoke-WebRequest -Uri $URIValue -Method POST -Body $BodyJSON -ContentType 'application/json'
+
+        $tablePrincipalName = $record.Principal.Replace("\","") #\not legal character for the row or partition id
+        $rowkeyvalue = "$($record.RowKey)-$currentTimeSeconds"
+
+        if($response.StatusCode -ne 200) #a problem
         {
-            Write-Host "Removing $($record.Principal) from $($record.GroupName) on machine $($record.OSName)"
-            $BodyObject = [PSCustomObject]@{"Action"="Remove";"CompName"=$record.RowKey;"SecPrincipal"=$record.Principal;"TargetLocalGroup"="$($record.GroupName)"}
-            $BodyJSON = ConvertTo-Json($BodyObject)
-            $response = Invoke-WebRequest -Uri $URIValue -Method POST -Body $BodyJSON -ContentType 'application/json'
-
-            $tablePrincipalName = $record.Principal.Replace("\","") #\not legal character for the row or partition id
-            $rowkeyvalue = "$($record.RowKey)-$currentTimeSeconds"
-
-            if($response.StatusCode -ne 200) #a problem
+            #Partitionkey and rowkey must be unique combination in table so use timestamp as part of rowkey
+            $statusGood = $false
+            Write-Host "Error trying to remove user. Error data returned was $($response.StatusCode) $($response.Content)"
+            try
             {
-                #Partitionkey and rowkey must be unique combination in table so use timestamp as part of rowkey
-                $statusGood = $false
-                Write-Host "Error trying to remove user. Error data returned was $($response.StatusCode) $($response.Content)"
-                try
-                {
-                    Add-AzTableRow `
-                        -table $logTable `
-                        -partitionKey $tablePrincipalName `
-                        -rowKey $rowkeyvalue -property @{"LogType"="Error";"Message"="Failure removing $($record.Principal) from $($record.GroupName) on machine $($record.OSName)";"Principal"="$($record.Principal)";"OSName"="$($record.OSName)";"GroupName"="$($record.GroupName)";"ResourceGroup"="$($record.ResourceGroup)";"Subscription"="$($record.subscription)";}
-                }
-                catch {
-                    $statusGood = $false
-                    Write-Host = "Failure creating table entry for process execution entry $tablePrincipalName $rowkeyvalue, $_"
-                }
+                Add-AzTableRow `
+                    -table $logTable `
+                    -partitionKey $tablePrincipalName `
+                    -rowKey $rowkeyvalue -property @{"LogType"="Error";"Message"="Failure removing $($record.Principal) from $($record.GroupName) on machine $($record.OSName)";"Principal"="$($record.Principal)";"OSName"="$($record.OSName)";"GroupName"="$($record.GroupName)";"ResourceGroup"="$($record.ResourceGroup)";"Subscription"="$($record.subscription)";}
             }
-            else
+            catch {
+                $statusGood = $false
+                Write-Host = "Failure creating table entry for process execution entry $tablePrincipalName $rowkeyvalue, $_"
+            }
+        }
+        else
+        {
+            Write-Host "User remove call completed succesfully. Data returned was $($response.StatusCode) $($response.Content)"
+            try
             {
-                Write-Host "User remove call completed succesfully. Data returned was $($response.StatusCode) $($response.Content)"
-                try
-                {
-                    Add-AzTableRow `
-                        -table $logTable `
-                        -partitionKey $tablePrincipalName `
-                        -rowKey $rowkeyvalue -property @{"LogType"="Information";"Message"="Removed $($record.Principal) from $($record.GroupName) on machine $($record.OSName)";"Principal"="$($record.Principal)";"OSName"="$($record.OSName)";"GroupName"="$($record.GroupName)";"ResourceGroup"="$($record.ResourceGroup)";"Subscription"="$($record.subscription)";}
-                }
-                catch {
-                    $statusGood = $false
-                    Write-Host = "Failure creating table entry for process execution entry $tablePrincipalName $rowkeyvalue, $_"
-                }
+                Add-AzTableRow `
+                    -table $logTable `
+                    -partitionKey $tablePrincipalName `
+                    -rowKey $rowkeyvalue -property @{"LogType"="Information";"Message"="Removed $($record.Principal) from $($record.GroupName) on machine $($record.OSName)";"Principal"="$($record.Principal)";"OSName"="$($record.OSName)";"GroupName"="$($record.GroupName)";"ResourceGroup"="$($record.ResourceGroup)";"Subscription"="$($record.subscription)";}
+            }
+            catch {
+                $statusGood = $false
+                Write-Host = "Failure creating table entry for process execution entry $tablePrincipalName $rowkeyvalue, $_"
             }
         }
     }

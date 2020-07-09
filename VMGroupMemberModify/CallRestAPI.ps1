@@ -7,7 +7,7 @@ $BodyJSON = ConvertTo-Json($BodyObject)
 $response = Invoke-RestMethod -Uri $URIValue -Method POST -Body $BodyJSON -ContentType 'application/json'
 
 #audit
-$BodyObject = [PSCustomObject]@{"Action"="Audit";"CompName"="savazuusscwin10";"TargetLocalGroup"="administrators"}
+$BodyObject = [PSCustomObject]@{"Action"="Auddit";"CompName"="savazuusscwin10";"TargetLocalGroup"="administrators"}
 $BodyJSON = ConvertTo-Json($BodyObject)
 $response = Invoke-RestMethod -Uri $URIValue -Method POST -Body $BodyJSON -ContentType 'application/json'
 $response
