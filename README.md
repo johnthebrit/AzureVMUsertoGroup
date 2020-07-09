@@ -14,3 +14,8 @@ The App Service that runs the three functions must have a system managed identit
 __Note that the RunCommand runs the commands as system so the function and identity should be protected by running inside a restricted subscription__
 
 A storage account must be created with two tables as defined in [TableCreate.ps1](TableCreate.ps1). The actual names can vary but must match the App Serivce application settings as defined in [RequiredAppVariables.json](RequiredAppVariables.json).
+
+App keys are used to secure the calling of the VMList and VMGroupMemberModify functions. Note that VMGroupCleanup needs to be able to call VMGroupMemberModify. Therefore:
+
+* The managed identity of the App Plan MUST be a contributor on the App Plan (so it can fetch keys)
+* A function Key named __VMGroupCleanupKey__ must exist on the __VMGroupMemberModify__ function to be used by VMGroupCleanup.
