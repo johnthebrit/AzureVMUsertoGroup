@@ -142,7 +142,10 @@ if($statusGood)
                 Select-AzSubscription -Subscription $VMResource.SubID
 
                 #Call the runCommand extension to perform the required command
-                $body += "$secprincipal $($secprincipal.contains("\")) "
+                if(($action -eq "Add") -or ($action -eq "Remove"))
+                {
+                    $body += "$secprincipal $($secprincipal.contains("\")) "
+                }
 
                 if($action -eq "Add")
                 {
@@ -154,7 +157,12 @@ if($statusGood)
                 }
                 else #assume Audit
                 {
-                    $CommandToRun = "Get-LocalGroupMember -Group '$targetlocalgroup' | convertto-json"
+                    #$CommandToRun = "Get-LocalGroupMember -Group '$targetlocalgroup' | convertto-json" #does not handle sids
+                    $CommandToRun = @"
+                    `$group = [ADSI]"WinNT://`$env:COMPUTERNAME/$targetlocalgroup"
+                    `$group_members = @(`$group.Invoke('Members') | % {([adsi]`$_).path})
+                    `$group_members | convertto-json
+"@
                 }
 
                 $body += $CommandToRun
